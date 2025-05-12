@@ -22,6 +22,11 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int peterson_create(void);                      //added
+int peterson_acquire(int lock_id, int role);    //added
+int peterson_release(int lock_id, int role);    //added
+int peterson_destroy(int lock_id);              //added
+
 
 // ulib.c
 int stat(const char*, struct stat*);
