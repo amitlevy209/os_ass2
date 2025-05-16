@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "peterson.h"
 
 uint64
 sys_exit(void)
@@ -88,4 +89,89 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_peterson_create(void)
+{
+  acquire(&peterson_lock);
+  for(int i = 0; i < MAXPETLOCKS; i++){
+    if(!peterson_locks[i].active){
+      peterson_locks[i].active  = 1;
+      peterson_locks[i].flag[0] = peterson_locks[i].flag[1] = 0;
+      peterson_locks[i].turn    = 0;
+      release(&peterson_lock);
+      return i;
+    }
+  }
+  release(&peterson_lock);
+  return -1;
+}
+
+uint64
+sys_peterson_acquire(void)
+{
+  int id, role;
+ 
+  argint(0, &id);
+  argint(1, &role);
+
+ 
+  if (id < 0 || id >= MAXPETLOCKS || (role != 0 && role != 1))
+    return -1;
+
+  struct petersonlock *lk = &peterson_locks[id];
+  if (!lk->active)
+    return -1;
+
+  int other = 1 - role;
+  __sync_synchronize();
+  __sync_lock_test_and_set(&lk->flag[role], 1);
+  __sync_synchronize();
+  lk->turn = other;
+
+    __sync_synchronize();
+  
+    while (lk->flag[other] && lk->turn == other) {
+      yield();
+    }
+  
+  return 0;
+}
+
+uint64
+sys_peterson_release(void)
+{
+  int id, role;
+  argint(0, &id);
+  argint(1, &role);
+  if (id < 0 || id >= MAXPETLOCKS || (role != 0 && role != 1))
+    return -1;
+
+  struct petersonlock *lk = &peterson_locks[id];
+  if (!lk->active)
+    return -1;
+
+  __sync_synchronize();
+  __sync_lock_release(&lk->flag[role]);
+  __sync_synchronize();
+  return 0;
+}
+
+uint64
+sys_peterson_destroy(void)
+{
+  int id;
+  argint(0, &id);
+  if (id < 0 || id >= MAXPETLOCKS)
+    return -1;
+
+  acquire(&peterson_lock);
+  if (!peterson_locks[id].active) {
+    release(&peterson_lock);
+    return -1;
+  }
+  peterson_locks[id].active = 0;
+  release(&peterson_lock);
+  return 0;
 }

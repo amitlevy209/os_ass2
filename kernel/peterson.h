@@ -1,4 +1,7 @@
+#include "spinlock.h"
+
 #define MAXPETLOCKS 15
+
 
 struct petersonlock {
   int active;        // 0=unused, 1=in use
@@ -6,5 +9,8 @@ struct petersonlock {
   int turn;          // whose turn it is when both want in
 };
 
-// Global array of locks
 extern struct petersonlock peterson_locks[MAXPETLOCKS];
+
+extern struct spinlock peterson_lock;
+
+void peterson_init(void);
