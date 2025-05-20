@@ -1,5 +1,7 @@
 struct stat;
 
+typedef unsigned int uint;
+
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -26,6 +28,10 @@ int peterson_create(void);                      //added
 int peterson_acquire(int lock_id, int role);    //added
 int peterson_release(int lock_id, int role);    //added
 int peterson_destroy(int lock_id);              //added
+int tournament_create(int processes);           //added
+int tournament_acquire(void);                   //added
+int tournament_release(void);                   //added
+
 
 
 // ulib.c
